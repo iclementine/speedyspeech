@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, url_for
+from flask import Flask, render_template, request, make_response
 import numpy as np
 from scipy.io.wavfile import write
-
+from io import BytesIO
 
 sample_rate = 22050;
 
@@ -18,29 +18,27 @@ class SpeedySpeech:
 speedyObject = SpeedySpeech()
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
-@app.route('/getData')
-def getData():
-    return 'Hello World';
-
-@app.route('/user/<username>')
-def profile(username):
-    return username;
-
-
-
-@app.route('/synthesize/<text>',methods=['POST'])
-def synthesize(text):
+@app.route('/synt/<text>',methods=['GET'])
+def synt(text):
+    buf = BytesIO()
     waveform_integers = speedyObject.synthesize(text)
-    return np.array2string(waveform_integers, separator=',');
-    # write('AudioFromNumpy.wav', sample_rate, waveform_integers)
-    # return 'Finished with : ' + input_text
-    # synthesize audio from text and return audio
-    # this endpoint expects input text
+    write(buf, sample_rate, waveform_integers)
+    response = make_response(buf.getvalue())
+    buf.close()
+    response.headers['Content-Type'] = 'audio/wav'
+    response.headers['Content-Disposition'] = 'attachment; filename=sound.wav'
+    return response;
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
