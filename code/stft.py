@@ -41,9 +41,9 @@ def nnls(mel_basis, mel_spec, n_iter=5, max_iter_per_step=20, lr=2):
             # regularize to get positive values
             loss = torch.sum(torch.pow(l, 2.0)) + 0.1*X[X<0].abs().sum()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(X, 1)
             return loss
-
-        torch.nn.utils.clip_grad_norm_(X, 1)
+        
         optim.step(closure)
     return X.abs()
 
